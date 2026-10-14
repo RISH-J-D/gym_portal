@@ -1,0 +1,592 @@
+/* Pre-redesign styles removed from heaven-hell.html (kept for rollback). */
+
+        :root { --glass-card: transparent; --accent: #dc2626; --accent-hover: #991b1b; --text: #ffffff; --muted: #e2e8f0; }
+        body { 
+            background: linear-gradient(rgba(0, 0, 0, 0.225), rgba(0, 0, 0, 0.375)), url('heaven-background.webp') no-repeat center fixed; 
+            background-size: cover; color: var(--text); font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 40px 20px; 
+            display: flex; flex-direction: column; align-items: center; box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .neon-cta-btn {
+            background: #dc2626 !important; color: white !important; border: none !important; padding: 18px 40px !important;
+            border-radius: 50px !important; font-size: 1.2rem !important; cursor: pointer !important; font-weight: 800 !important;
+            text-transform: uppercase !important; letter-spacing: 0.08em !important; width: auto !important; margin-top: 25px !important;
+            display: inline-block !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important; transition: background 0.2s ease !important;
+        }
+        .neon-cta-btn:hover { background: #991b1b !important; }
+        .container { width: 100%; max-width: 650px; padding: 20px; position: relative; background: transparent; box-shadow: none; border: none; backdrop-filter: none; -webkit-backdrop-filter: none; box-sizing: border-box; }
+        h1 { font-size: 3.8rem; font-weight: 900; color: #ffffff; text-shadow: 3px 3px 10px rgba(0,0,0,0.95); margin-bottom: 8px; letter-spacing: -0.04em; font-family: 'Arial Black', Impact, sans-serif; white-space: nowrap; width: 100%; text-align: center; }
+        h2 { font-size: 1.9rem; font-weight: 800; color: #ffffff; border-bottom: 2px solid var(--accent); padding-bottom: 12px; margin-top: 0; text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8); }
+        .section-title { font-size: 1.15rem; color: #fca5a5; margin: 40px 0 20px 0; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid rgba(255, 255, 255, 0.25); padding-bottom: 8px; text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9); background: rgba(15, 23, 42, 0.45); padding: 4px 10px; border-radius: 6px; }
+        .form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
+        label { margin-bottom: 10px; font-size: 1.25rem; color: #ffffff; font-weight: 700; text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.95); display: inline-block; background: rgba(15, 23, 42, 0.45); padding: 4px 12px; border-radius: 8px; width: fit-content; }
+        input, select, textarea { background: rgba(255, 255, 255, 0.95); border: 1px solid #cbd5e1; color: #0f172a; padding: 13px 16px; border-radius: 12px; font-size: 1.15rem; box-sizing: border-box; width: 100%; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); background: #ffffff; box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.25); }
+        .row { display: flex; gap: 15px; margin-bottom: 10px; }
+        .row .form-group { flex: 1; margin-bottom: 0; }
+        .hidden { display: none; }
+        .nav-tabs { display: flex; gap: 12px; margin-bottom: 30px; background: rgba(255, 255, 255, 0.1); padding: 6px; border-radius: 14px; width: 100%; box-sizing: border-box; }
+        .tab-btn { background: transparent; border: none; padding: 12px 16px; border-radius: 10px; color: #e2e8f0; cursor: pointer; width: 50%; font-weight: 700; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); }
+        .tab-btn.active { background: #ffffff; color: var(--accent); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); text-shadow: none; }
+        .delete-btn { background-color: #dc3545; color: white; border: none; padding: 6px 12px; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 0.85rem; margin-left: 10px; }
+        .delete-btn:hover { background-color: #c82333; }
+    
+        /* DESIGN-ONLY UPDATE: keep all existing HTML, questions, names and JavaScript unchanged */
+        body {
+            background: linear-gradient(135deg, rgba(8, 12, 28, 0.22), rgba(15, 23, 42, 0.32)), url('heaven-background.webp') no-repeat center fixed;
+            background-size: cover;
+        }
+        #welcome-page, .container {
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 20px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .container { max-width: 900px; padding: 28px; }
+        h1 {
+            color: #fff;
+            background: linear-gradient(100deg, #ffffff 0%, #fecaca 22%, #ffffff 42%, #fb7185 62%, #ffffff 82%, #fecaca 100%);
+            background-size: 220% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 18px rgba(255,255,255,0.18);
+            animation: heavenHellShine 5s linear infinite;
+        }
+        @keyframes heavenHellShine {
+            to { background-position: 220% center; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            h1 { animation: none; }
+        }
+        h2 { color: #fff; text-shadow: 0 2px 12px rgba(255,255,255,0.12); }
+        .section-title {
+            color: #fff;
+            background: rgba(255,255,255,0.06);
+            border-bottom: 2px solid rgba(248,113,113,0.85);
+            border-radius: 8px;
+        }
+        label { color: #fff; }
+        .nav-tabs {
+            background: transparent;
+            border: 0;
+            padding: 0;
+            gap: 10px;
+        }
+        .tab-btn {
+            flex: 1;
+            width: auto;
+            min-height: 48px;
+            background: linear-gradient(135deg, #fb7185, #dc2626);
+            color: #fff;
+            border-radius: 9px;
+            font-size: 1rem;
+            text-shadow: none;
+            box-shadow: 0 5px 14px rgba(220,38,38,0.18);
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #fb7185, #dc2626);
+            color: #fff;
+            box-shadow: 0 5px 16px rgba(220,38,38,0.28);
+        }
+        input, select, textarea {
+            background: #f8f7f2;
+            color: #111827;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: #fb7185;
+            box-shadow: 0 0 0 3px rgba(251,113,133,0.22);
+        }
+        .neon-cta-btn {
+            background: linear-gradient(135deg, #fb7185, #dc2626) !important;
+            box-shadow: 0 8px 22px rgba(220,38,38,0.25) !important;
+        }
+        @media (max-width: 600px) {
+            body { padding: 22px 12px; background-attachment: scroll; }
+            .container { padding: 18px 14px; }
+            #welcome-page { width: 100%; box-sizing: border-box; margin: 28px auto !important; }
+            .nav-tabs { gap: 6px; }
+            .tab-btn { padding: 10px 7px; font-size: 0.85rem; }
+            h1 { white-space: normal; font-size: clamp(2rem, 8vw, 3rem); line-height: 1.1; }
+            .row { flex-direction: column; gap: 10px; }
+            input, select, textarea { max-width: 100%; }
+        }
+
+        /* Requested finishing touches: solid red unlock button, back button, stronger mobile layout */
+        #login-section > button {
+            background: #e00000 !important;
+            background-image: none !important;
+            color: #fff !important;
+            border: 1px solid #ff4b4b !important;
+            box-shadow: 0 7px 0 #9f0000, 0 10px 22px rgba(224,0,0,.28) !important;
+            transition: transform .15s ease, box-shadow .15s ease !important;
+        }
+        #login-section > button:hover { background: #e00000 !important; }
+        #login-section > button:active { transform: translateY(3px); box-shadow: 0 4px 0 #9f0000 !important; }
+        .form-action-row { display:flex; align-items:stretch; gap:12px; margin-top:30px; }
+        .form-action-row .neon-cta-btn { flex:1; width:100% !important; margin-top:0 !important; }
+        .back-btn { flex:0 0 auto; margin-top:0; padding:14px 22px; border:1px solid rgba(255,255,255,.35); border-radius:12px; background:rgba(255,255,255,.1); color:#fff; font-size:1rem; font-weight:700; cursor:pointer; }
+        .back-btn:hover { background:rgba(255,255,255,.18); }
+        button, input, select, textarea { max-width:100%; }
+        @media (max-width:600px) {
+            body { padding:12px 8px; }
+            #welcome-page { padding:28px 14px !important; margin:20px auto !important; }
+            #welcome-page p { font-size:1rem !important; line-height:1.5; }
+            #main-app.container { padding:14px 10px; border-radius:16px; }
+            .container { width:100%; }
+            h2 { font-size:1.45rem; line-height:1.25; }
+            .form-group { margin-bottom:16px; }
+            label { font-size:1rem; line-height:1.4; }
+            input, select, textarea { font-size:16px; padding:12px; }
+            .neon-cta-btn { font-size:1rem !important; padding:15px 16px !important; letter-spacing:.03em !important; }
+            .form-action-row { gap:8px; }
+            .back-btn { padding:12px 14px; font-size:.9rem; }
+            #welcome-page a { left:10px !important; bottom:10px !important; padding:8px 10px !important; font-size:.75rem !important; }
+            #welcome-page > div[style*="position: fixed"] { right:10px !important; bottom:10px !important; font-size:.7rem !important; }
+        }
+        @media (max-width:380px) {
+            .form-action-row { flex-direction:column-reverse; }
+            .back-btn { width:100%; min-height:46px; }
+            .form-action-row .neon-cta-btn { min-height:48px; }
+        }
+
+
+        /* FRONT PAGE ONLY: match the user's reference image; leave portal/forms untouched */
+        body:has(#welcome-page:not(.hidden)) {
+            background-color: transparent !important;
+            background-attachment: scroll !important;
+            box-shadow: none !important;
+        }
+        #welcome-page {
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            max-width: 1000px !important;
+            width: 100% !important;
+            padding: 65px 20px !important;
+            margin: 70px auto !important;
+        }
+        #welcome-page h1 {
+            color: #f8f7f1 !important;
+            background: none !important;
+            -webkit-text-fill-color: #f8f7f1 !important;
+            text-shadow: none !important;
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-size: clamp(2.5rem, 7.4vw, 5.2rem) !important;
+            font-weight: 900 !important;
+            letter-spacing: .015em !important;
+            line-height: 1.08 !important;
+            white-space: normal !important;
+            margin: 0 auto 52px !important;
+        }
+        #welcome-page h1 .title-amp { color: #ef4658 !important; -webkit-text-fill-color: #ef4658 !important; }
+        #welcome-page > p {
+            color: #f8f7f1 !important;
+            text-shadow: none !important;
+            font-size: clamp(.95rem, 1.8vw, 1.2rem) !important;
+            line-height: 1.35 !important;
+            letter-spacing: .015em !important;
+            font-weight: 500 !important;
+            margin-bottom: 18px !important;
+        }
+        #welcome-page .neon-cta-btn {
+            background: #ef3447 !important;
+            background-image: none !important;
+            border-radius: 8px !important;
+            padding: 13px 22px !important;
+            margin-top: 0 !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            letter-spacing: .01em !important;
+            box-shadow: none !important;
+        }
+        #welcome-page .neon-cta-btn:hover { background: #df2639 !important; }
+        @media (max-width: 600px) {
+            body:has(#welcome-page:not(.hidden)) { padding: 12px 8px !important; }
+            #welcome-page { padding: 22vh 10px 100px !important; margin: 0 auto !important; }
+            #welcome-page h1 { font-size: clamp(2.15rem, 9vw, 3.4rem) !important; margin-bottom: 34px !important; }
+            #welcome-page > p { font-size: .9rem !important; }
+        }
+
+    
+        /* Reference-matched finishing update: smaller portal typography and solid red navigation tabs only */
+        .nav-tabs .tab-btn,
+        .nav-tabs .tab-btn.active {
+            background: #e00000 !important;
+            background-image: none !important;
+            color: #ffffff !important;
+            opacity: 1 !important;
+            text-shadow: none !important;
+            box-shadow: none !important;
+            font-size: 0.92rem !important;
+            font-weight: 700 !important;
+        }
+        .nav-tabs .tab-btn:hover { background: #c90000 !important; }
+        #main-app h2, .container h2 { font-size: 1.45rem; line-height: 1.25; }
+        #main-app .section-title, .container .section-title { font-size: 0.98rem; }
+        #main-app label, .container label { font-size: 0.98rem; }
+        #main-app input, #main-app select, #main-app textarea,
+        .container input, .container select, .container textarea { font-size: 1rem; }
+        #main-app p, .container p { font-size: 0.95rem; line-height: 1.5; }
+        @media (max-width: 600px) {
+            .nav-tabs { gap: 7px; }
+            .nav-tabs .tab-btn, .nav-tabs .tab-btn.active { font-size: 0.78rem !important; padding: 10px 5px; min-width: 0; }
+            #main-app h2, .container h2 { font-size: 1.25rem; }
+            #main-app label, .container label { font-size: 0.9rem; }
+            #main-app p, .container p { font-size: 0.88rem; }
+        }
+
+
+/* Verified visual update: gym-photo background, glass panels, vivid red controls, and responsive progress graph */
+:root { --glass-card: rgba(15, 23, 42, .66); --accent: #ff1838; --accent-hover: #d90429; }
+body { background-color:#08090d !important; background-blend-mode:normal; background-size:cover !important; background-position:center center !important; background-attachment:fixed !important; }
+#welcome-page, .container, .progress-graph-panel, .progress-tracker-content, .admin-progress-content {
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.admin-graph-panel { margin-top:14px; background:rgba(8,12,24,.58); }
+.progress-graph-panel { margin-top:18px; padding:16px; border:1px solid rgba(255,255,255,.22); border-radius:16px; background:rgba(8,12,24,.76); box-shadow:0 12px 32px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.1); color:#fff; }
+.progress-graph-panel h5 { margin:0 0 6px; color:#ff6b81; font-size:1.05rem; font-weight:850; letter-spacing:.04em; }
+.progress-graph-panel p { color:#e5e7eb; margin:0 0 12px; }
+.progress-graph { width:100%; min-height:170px; overflow:hidden; color:#f8fafc; }
+.progress-graph svg { display:block; width:100%; max-width:100%; height:auto; }
+.progress-tracker-details, .admin-progress-details { border-radius:14px; overflow:hidden; }
+.progress-tracker-details > summary, .admin-progress-details > summary { cursor:pointer; color:#ff8798 !important; font-weight:850; }
+button, input[type=submit] { background-image:linear-gradient(110deg,#ff1738,#e5092f 55%,#b80024) !important; color:#fff !important; box-shadow:0 5px 16px rgba(255,24,56,.24); }
+@media (max-width:600px) {
+ body { padding:16px 10px !important; background-attachment:scroll !important; }
+ #welcome-page, .container { width:100% !important; max-width:100% !important; box-sizing:border-box !important; margin:12px auto !important; padding:16px !important; }
+ .progress-graph-panel { padding:12px; }
+ .progress-graph { min-height:140px; }
+ .tracker-fields { display:flex !important; flex-wrap:wrap !important; gap:10px !important; }
+ .tracker-field { flex:1 1 100% !important; min-width:0 !important; }
+ .tracker-input { width:100% !important; box-sizing:border-box !important; font-size:16px !important; }
+}
+
+
+
+/* HEAVEN & HELL — refined premium glass UI (visual-only overrides) */
+:root {
+  --hh-glass: rgba(16, 19, 29, .58);
+  --hh-glass-strong: rgba(10, 13, 22, .78);
+  --hh-border: rgba(255,255,255,.20);
+  --hh-red: #f0183d;
+  --hh-red-bright: #ff294d;
+}
+html { min-height:100%; background:#080a10; }
+body {
+  color:#f8fafc !important;
+  background-color:#080a10 !important;
+  background-size:cover !important;
+  background-position:center center !important;
+  background-attachment:fixed !important;
+}
+body, body:has(#welcome-page:not(.hidden)) {
+  background-image: linear-gradient(135deg, rgba(4,6,12,.42), rgba(4,6,12,.49)), url('heaven-background.webp') !important;
+  background-color:#080a10 !important;
+  background-size:cover !important; background-position:center center !important;
+  background-attachment:fixed !important; background-repeat:no-repeat !important;
+}
+
+/* The welcome page stays transparent over the gym image; no grey/white wash. */
+body:has(#welcome-page:not(.hidden)) { box-shadow:none !important; }
+#welcome-page {
+  background:rgba(9,12,20,.12) !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+  border-radius:28px !important;
+  box-shadow:0 18px 60px rgba(0,0,0,.18) !important;
+  backdrop-filter:blur(1.4px) !important; -webkit-backdrop-filter:blur(1.4px) !important;
+}
+/* All primary tabs: glass surface, solid readable red label/accent, no glow behind. */
+.nav-tabs { gap:12px !important; margin-bottom:22px !important; }
+.nav-tabs .tab-btn, .nav-tabs .tab-btn.active {
+  position:relative !important;
+  isolation:isolate !important;
+  background:rgba(20,24,35,.64) !important;
+  background-image:none !important;
+  color:#fff !important;
+  border:1px solid rgba(255,255,255,.20) !important;
+  border-bottom:3px solid #f0183d !important;
+  border-radius:14px !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10) !important;
+  backdrop-filter:blur(18px) saturate(135%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(135%) !important;
+  text-shadow:none !important; opacity:1 !important;
+  transition:background .18s ease, border-color .18s ease, transform .18s ease !important;
+}
+.nav-tabs .tab-btn::before, .nav-tabs .tab-btn::after { content:none !important; display:none !important; }
+.nav-tabs .tab-btn:hover, .nav-tabs .tab-btn.active:hover {
+  background:rgba(35,39,51,.78) !important;
+  border-color:rgba(255,255,255,.30) !important;
+  border-bottom-color:#ff294d !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13) !important;
+  transform:translateY(-1px) !important;
+}
+.nav-tabs .tab-btn.active { background:rgba(240,24,61,.18) !important; border-color:rgba(255,80,105,.42) !important; border-bottom-color:#ff294d !important; }
+/* Glass treatment for every major portal panel/card without changing behavior. */
+#main-app.container, .container:not(#welcome-page), .progress-graph-panel,
+.progress-tracker-content, .admin-progress-content, .progress-tracker-details,
+.admin-progress-details, .client-card, .dashboard-card, .form-section,
+#login-section, #client-portal, #admin-panel {
+  background:rgba(12,16,27,.70) !important;
+  color:#f8fafc !important;
+  border:1px solid var(--hh-border) !important;
+  border-radius:20px !important;
+  box-shadow:0 16px 44px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.07) !important;
+  backdrop-filter:blur(18px) saturate(125%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(125%) !important;
+}
+/* Keep nested white content panels softly translucent rather than opaque. */
+#main-app .card, .container .card, .container details, .container .section-card {
+  background:rgba(245,247,250,.09) !important;
+  border:1px solid rgba(255,255,255,.15) !important;
+  color:#f8fafc !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+#main-app h2, #main-app h3, #main-app h4, .container h2, .container h3,
+.container h4, .section-title { color:#fff !important; }
+#main-app label, .container label, #main-app p, .container p,
+#main-app small, .container small { color:#edf1f8 !important; }
+input, select, textarea {
+  background:rgba(248,250,252,.94) !important;
+  color:#171923 !important;
+  border:1px solid rgba(255,255,255,.38) !important;
+  border-radius:11px !important;
+  box-shadow:none !important;
+}
+button, input[type=submit], .neon-cta-btn {
+  background:#ed1238 !important; background-image:none !important;
+  color:#fff !important; border:1px solid rgba(255,255,255,.16) !important;
+  border-radius:12px !important; box-shadow:none !important;
+}
+button:hover, input[type=submit]:hover, .neon-cta-btn:hover { background:#c90d2d !important; box-shadow:none !important; }
+.progress-graph-panel { background:rgba(8,12,22,.72) !important; }
+.progress-graph-panel h5, .progress-tracker-details > summary, .admin-progress-details > summary { color:#ff6d86 !important; }
+@media (max-width:700px) {
+ body, body:has(#welcome-page:not(.hidden)) { background-attachment:scroll !important; background-position:center center !important; }
+ .nav-tabs { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:8px !important; }
+ .nav-tabs .tab-btn, .nav-tabs .tab-btn.active { width:100% !important; min-width:0 !important; padding:12px 8px !important; font-size:.86rem !important; border-radius:12px !important; }
+ #main-app.container, .container:not(#welcome-page) { padding:14px !important; border-radius:16px !important; }
+ #welcome-page { margin:20px auto !important; padding:26vh 12px 80px !important; width:100% !important; box-sizing:border-box !important; }
+ .progress-graph-panel { padding:12px !important; }
+}
+
+
+/* Readability repair for client + admin views: dark glass panels, high-contrast text. */
+#portal-page, #portal-page * { text-shadow:none; }
+#portal-page h2, #portal-page h3, #portal-page h4,
+#portal-page .progress-tracker-details > summary,
+#portal-page .admin-progress-details > summary,
+#portal-page .tracker-label,
+#portal-page .progress-graph-panel h4,
+#portal-page .progress-tracker-content h4,
+#portal-page .admin-progress-content h4 {
+  color:#f8fafc !important; opacity:1 !important;
+}
+#portal-page #diet-section > div,
+#portal-page #diet-content > div,
+#portal-page .progress-tracker-content,
+#portal-page .admin-progress-content,
+#portal-page .progress-graph-panel,
+#portal-page .progress-tracker-details,
+#portal-page .admin-progress-details {
+  background:rgba(9,14,24,.88) !important;
+  color:#f8fafc !important;
+  border:1px solid rgba(255,255,255,.16) !important;
+  box-shadow:0 12px 30px rgba(0,0,0,.22) !important;
+}
+#portal-page .progress-tracker-details > summary,
+#portal-page .admin-progress-details > summary {
+  display:block !important; padding:14px 16px !important;
+  background:rgba(255,255,255,.035) !important;
+  border-bottom:1px solid rgba(255,255,255,.12) !important;
+  color:#ff8798 !important; cursor:pointer !important;
+}
+#portal-page .tracker-intro,
+#portal-page .progress-tracker-content p,
+#portal-page .admin-progress-content p,
+#portal-page .progress-graph-panel p,
+#portal-page .progress-tracker-content label,
+#portal-page .admin-progress-content label,
+#portal-page .progress-tracker-content span,
+#portal-page .admin-progress-content span,
+#portal-page .progress-tracker-content li,
+#portal-page .admin-progress-content li { color:#f1f5f9 !important; opacity:1 !important; }
+#portal-page .tracker-label { display:inline-block !important; margin-bottom:7px !important; font-weight:800 !important; }
+#portal-page .tracker-input,
+#portal-page .progress-tracker-content input,
+#portal-page .admin-progress-content input,
+#portal-page .progress-tracker-content select,
+#portal-page .admin-progress-content select {
+  background:rgba(255,255,255,.08) !important; color:#fff !important;
+  border:1px solid rgba(255,255,255,.26) !important; border-radius:10px !important;
+  min-height:46px !important; padding:11px 13px !important; font-size:16px !important;
+  box-sizing:border-box !important; width:100% !important;
+}
+#portal-page .tracker-input::placeholder,
+#portal-page .progress-tracker-content input::placeholder,
+#portal-page .admin-progress-content input::placeholder { color:#cbd5e1 !important; opacity:1 !important; }
+#portal-page .progress-tracker-content table,
+#portal-page .admin-progress-content table { color:#f8fafc !important; }
+#portal-page .progress-tracker-content th,
+#portal-page .admin-progress-content th { color:#fff !important; background:rgba(255,255,255,.08) !important; }
+#portal-page .progress-tracker-content td,
+#portal-page .admin-progress-content td { color:#e5e7eb !important; border-color:rgba(255,255,255,.14) !important; }
+#portal-page .progress-graph { color:#f8fafc !important; }
+#portal-page .progress-graph svg text { fill:#f8fafc !important; }
+@media(max-width:600px){
+ #portal-page .progress-tracker-content, #portal-page .admin-progress-content { padding:12px !important; }
+ #portal-page .tracker-fields { display:grid !important; grid-template-columns:minmax(0,1fr) !important; gap:12px !important; }
+ #portal-page .tracker-field { min-width:0 !important; width:100% !important; }
+ #portal-page .tracker-input { min-width:0 !important; }
+}
+
+
+
+
+  .hh-client-count{display:inline-flex;align-items:center;justify-content:center;margin-left:10px;padding:5px 10px;border-radius:999px;background:#dc2626;color:#fff;font-size:.72em;letter-spacing:.06em;vertical-align:middle;box-shadow:0 3px 10px rgba(220,38,38,.25)}
+  .hh-admin-client-card{background:rgba(20,25,38,.34)!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:18px!important;box-shadow:0 12px 28px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.12)!important;backdrop-filter:blur(10px) saturate(115%)!important;-webkit-backdrop-filter:blur(10px) saturate(115%)!important;}
+  .hh-admin-client-heading{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;padding:0 0 12px;border-bottom:1px solid rgba(255,255,255,.17)}
+  .hh-client-number{display:inline-flex;align-items:center;justify-content:center;min-width:78px;padding:7px 11px;border-radius:10px;background:#dc2626;color:#fff;font-weight:900;font-size:.82rem;letter-spacing:.04em;box-shadow:0 4px 12px rgba(220,38,38,.22)}
+  .hh-client-name-preview{color:#fff;font-weight:750;font-size:1.03rem;text-shadow:0 1px 5px rgba(0,0,0,.25);overflow-wrap:anywhere}
+  #main-app.container,#portal-page,#diet-section,#login-section,#admin-panel,.container:not(#welcome-page),.progress-graph-panel,.progress-tracker-content,.admin-progress-content,.progress-tracker-details,.admin-progress-details,.client-card,.dashboard-card,.form-section{background:rgba(15,20,32,.34)!important;border-color:rgba(255,255,255,.20)!important;box-shadow:0 14px 36px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.10)!important;backdrop-filter:blur(12px) saturate(115%)!important;-webkit-backdrop-filter:blur(12px) saturate(115%)!important;color:#f8fafc!important}
+  #diet-section .card,#diet-section details,#diet-section .section-card,#portal-page .card,#portal-page details{background:rgba(35,42,57,.42)!important;border:1px solid rgba(255,255,255,.18)!important;color:#f8fafc!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important}
+  #diet-section h3,#diet-section h4,#portal-page h3,#portal-page h4,.admin-progress-details summary{color:#ff858b!important;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+  #diet-section label,#diet-section p,#diet-section span,#portal-page label,#portal-page p{ text-shadow:0 1px 4px rgba(0,0,0,.18)}
+  @media(max-width:640px){.hh-admin-client-card{padding:14px!important}.hh-admin-client-heading{gap:8px}.hh-client-name-preview{font-size:.95rem}.hh-client-count{margin:8px 0 0 0}.hh-admin-client-card>div[style*="display: flex"]{flex-wrap:wrap!important;gap:10px!important}.hh-admin-client-card>div[style*="display: flex"]>div{min-width:100%!important}}
+
+        /* Targeted fix: let the existing background image show through the onboarding area. */
+        #main-app.container, #form-page, #portal-page {
+            background-color: transparent !important;
+            background-image: none !important;
+            box-shadow: none !important;
+        }
+        #form-page form, #portal-page .panel, #portal-page .card, #portal-page .section-card {
+            background: rgba(15, 23, 42, 0.30) !important;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+        }
+        #form-page .section-title, #form-page h2 {
+            background-color: rgba(15, 23, 42, 0.18) !important;
+        }
+
+
+/* FINAL FIX: keep the embedded gym photo visible behind the entire app after Join Now. */
+html { min-height:100%; background:#080a10 !important; }
+body { position:relative !important; isolation:isolate; background:transparent !important; background-image:none !important; min-height:100vh !important; }
+body::before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image: linear-gradient(135deg, rgba(4,6,12,.12), rgba(4,6,12,.22)), url('heaven-background.webp'); background-size:cover; background-position:center center; background-repeat:no-repeat; }
+#main-app.container { background:rgba(15,20,32,.10) !important; background-image:none !important; box-shadow:none !important; }
+#main-app .nav-tabs { background:rgba(15,20,32,.22) !important; }
+#form-page, #portal-page { background:transparent !important; background-image:none !important; }
+#form-page form, #portal-page .panel, #portal-page .card, #portal-page .section-card { background:rgba(15,23,42,.28) !important; backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+
+/* Focused requested polish: home brand scale, premium progress chart, diet copy action */
+#welcome-page h1 { font-size:clamp(2rem, 4.6vw, 3.35rem) !important; line-height:1.04 !important; margin-top:8px !important; margin-bottom:22px !important; letter-spacing:.035em !important; }
+#welcome-page .title-amp { font-size:.88em !important; }
+.diet-heading-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+.diet-heading-row h4 { margin-bottom:0 !important; }
+.copy-diet-btn { padding:9px 14px !important; border:1px solid rgba(255,255,255,.25) !important; border-radius:10px !important; background:linear-gradient(135deg,#fb2446,#c8102e) !important; color:#fff !important; font-weight:750 !important; font-size:.9rem !important; cursor:pointer; white-space:nowrap; }
+.copy-diet-btn:hover { filter:brightness(1.08); transform:translateY(-1px); }
+.hh-chart-shell { padding:10px; border-radius:16px; border:1px solid rgba(255,255,255,.13); background:rgba(5,10,20,.45); box-shadow:0 12px 28px rgba(0,0,0,.18); }
+.hh-chart-shell svg { display:block; width:100%; height:auto; }
+.hh-chart-footer { display:flex; align-items:center; gap:18px; flex-wrap:wrap; padding:10px 8px 2px; color:#e2e8f0; font-size:.85rem; }
+.hh-chart-footer span { display:inline-flex; align-items:center; gap:7px; }
+.hh-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+.weight-dot { background:#fb7185; box-shadow:0 0 10px #fb718566; }
+.waist-dot { background:#34d399; box-shadow:0 0 10px #34d39966; }
+.hh-chart-count { margin-left:auto; color:#94a3b8; }
+.hh-chart-empty { padding:20px 12px; text-align:center; color:#cbd5e1; border:1px dashed rgba(148,163,184,.5); border-radius:12px; background:rgba(15,23,42,.42); }
+@media(max-width:600px) { #welcome-page h1 { font-size:clamp(1.75rem, 8vw, 2.5rem) !important; } .hh-chart-shell { padding:5px; } .hh-chart-footer { gap:10px; font-size:.78rem; } .copy-diet-btn { width:100%; } }
+
+
+
+
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { width: 100%; min-width: 320px; overflow-x: hidden; scroll-padding-top: 16px; }
+  body { display:block !important; align-items:initial !important; width:100%; min-width:320px; min-height:100dvh; margin:0 !important; padding:0 !important; overflow-x:hidden; }
+  #welcome-page { display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; max-width:1000px; min-height:calc(100dvh - 48px); margin:0 auto !important; padding:clamp(20px,5vw,64px) clamp(12px,4vw,48px) !important; }
+  #welcome-page h1 { width:100%; max-width:100%; white-space:normal; overflow-wrap:anywhere; font-size:clamp(2rem,7.5vw,4.2rem) !important; line-height:1.04 !important; }
+  #welcome-page > p { max-width:60ch; }
+  #main-app.container, .container { width:100%; max-width:1100px; margin-inline:auto; padding:clamp(14px,2.4vw,30px); }
+  #form-page, #portal-page, #diet-section, #login-section, #admin-panel, #diet-content, #admin-container-view,
+  #form-page form, #portal-page .panel, #portal-page .card, #portal-page .section-card { min-width:0; max-width:100%; }
+  .row { min-width:0; flex-wrap:wrap; }
+  .row > *, .form-group { min-width:0; }
+  input, select, textarea, button { max-width:100%; }
+  input, select, textarea { min-width:0; }
+  button, .tab-btn, summary { touch-action:manipulation; }
+  #portal-page, #diet-section, #admin-container-view { overflow-wrap:anywhere; }
+  #portal-page table, #admin-container-view table { display:block; max-width:100%; overflow-x:auto; }
+  .hh-chart-shell, .progress-graph-panel, .progress-tracker-content, .admin-progress-content { min-width:0; max-width:100%; }
+  .hh-chart-shell svg, .progress-graph svg { width:100%; height:auto; }
+  .tracker-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:12px; }
+  .tracker-field, .tracker-input { min-width:0; max-width:100%; width:100%; }
+  @media (max-width: 700px) {
+    body { padding:10px 10px calc(76px + env(safe-area-inset-bottom)); }
+    #welcome-page { min-height:calc(100dvh - 20px); padding:24px 12px 88px !important; }
+    #welcome-page h1 { font-size:clamp(2rem,10vw,3.5rem) !important; }
+    .container, #main-app.container { padding:14px !important; }
+    .nav-tabs { gap:6px; }
+    .nav-tabs .tab-btn, .nav-tabs .tab-btn.active { min-width:0; padding:11px 7px !important; font-size:clamp(.72rem,2.5vw,.9rem) !important; line-height:1.2; overflow-wrap:anywhere; }
+    .row { display:grid !important; grid-template-columns:minmax(0,1fr); gap:8px; }
+    .row .form-group { width:100%; }
+    .form-group { margin-bottom:16px; }
+    input, select, textarea { width:100%; font-size:16px !important; }
+    button, .neon-cta-btn, .back-btn, .tracker-update-btn { min-height:44px; }
+    #welcome-page a { left:max(10px, env(safe-area-inset-left)) !important; bottom:max(10px, env(safe-area-inset-bottom)) !important; max-width:52vw; white-space:normal; }
+    #welcome-page > div[style*="position: fixed"] { right:max(10px, env(safe-area-inset-right)) !important; bottom:max(10px, env(safe-area-inset-bottom)) !important; max-width:42vw; text-align:center; }
+    .hh-admin-client-card { min-width:0; padding:12px !important; }
+    .hh-admin-client-heading { align-items:flex-start; }
+    #admin-container-view [style*="display: flex"] { flex-wrap:wrap !important; }
+    #admin-container-view [style*="display: flex"] > * { min-width:0 !important; max-width:100%; }
+    .hh-chart-footer { gap:8px; }
+    .copy-diet-btn { width:100%; white-space:normal; }
+  }
+  @media (max-width: 420px) {
+    .nav-tabs { flex-direction:column; }
+    .nav-tabs .tab-btn, .nav-tabs .tab-btn.active { width:100% !important; }
+    #welcome-page h1 { font-size:clamp(1.8rem,9vw,2.5rem) !important; }
+    .section-title { font-size:.9rem !important; }
+    .hh-client-number { min-width:0; }
+  }
+  @media (min-width: 701px) and (max-width: 1100px) {
+    .container, #main-app.container { max-width:96vw; }
+    .row { gap:12px; }
+  }
+  @media (max-height: 500px) and (orientation: landscape) {
+    #welcome-page { min-height:auto; padding:20px 12px 88px !important; }
+    #welcome-page h1 { margin:0 0 12px !important; }
+    #welcome-page > p { margin-bottom:16px !important; }
+  }
+
+
+
+
+#admin-panel .copy-diet-btn, #admin-panel [onclick*="copyDietPlan"], .admin-panel .copy-diet-btn, .admin-panel [onclick*="copyDietPlan"], #admin-container-view .copy-diet-btn, #admin-container-view [onclick*="copyDietPlan"] { display:none !important; }
+/* Keep the real background image visible on the home screen; remove the opaque gray replacement and all blur. */
+body:has(#welcome-page:not(.hidden)) { background-color: transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+html:has(#welcome-page:not(.hidden)) { background: transparent !important; }
+#welcome-page { background: transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; width:100% !important; max-width:none !important; min-height:100vh !important; box-sizing:border-box !important; margin:0 auto !important; }
+#welcome-page h1 { font-size:clamp(1.75rem, 4.2vw, 3.2rem) !important; margin-top:0 !important; margin-bottom:32px !important; }
+
+
+
+
+/* Admin panel: completely hide the Copy Diet Plan action without affecting the client portal. */
+#admin-panel button.copy-diet-btn, #admin-panel #copy-diet-btn, #admin-panel [onclick*="copyDietPlan"], #admin-container-view button.copy-diet-btn, #admin-container-view #copy-diet-btn, #admin-container-view [onclick*="copyDietPlan"], .admin-panel button.copy-diet-btn, .admin-panel #copy-diet-btn, .admin-panel [onclick*="copyDietPlan"] { display:none !important; visibility:hidden !important; }
+/* Make all eight onboarding section headings light red. */
+#form-page .section-title { color:#ff8f9f !important; }
+
+
+
+
+body #admin-panel .copy-diet-btn, body #admin-panel #copy-diet-btn, body #admin-panel [onclick*="copyDietPlan"], body #admin-container-view .copy-diet-btn, body #admin-container-view #copy-diet-btn, body #admin-container-view [onclick*="copyDietPlan"], body .admin-panel .copy-diet-btn, body .admin-panel #copy-diet-btn, body .admin-panel [onclick*="copyDietPlan"] { display:none !important; visibility:hidden !important; pointer-events:none !important; }
+

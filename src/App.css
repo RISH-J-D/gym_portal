@@ -1,0 +1,21 @@
+.portal-host {
+  width: 100%;
+  min-height: 100dvh;
+  /* clip (not hidden/auto) so the portal's sticky header keeps working */
+  overflow-x: clip;
+  background: transparent;
+}
+
+.portal-status {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 24px;
+  color: #fff;
+  background: #080a10;
+  font: 600 1rem/1.5 system-ui, sans-serif;
+  text-align: center;
+}

@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// Firestore rules for the HEAVEN & HELL portal.
+// Publish in Firebase Console > Firestore Database > Rules (project heaven-hell-96fb9),
+// or with `firebase deploy --only firestore:rules`.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email.lower() == 'kaviraja391@gmail.com';
+    }
+
+    // Shared admin database (client profiles, diet plans, progress) and saved diet templates.
+    match /portalData/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Landing-page intake form: anyone may submit; only the coach can read, update status, or delete.
+    // Each submission is stored under the applicant's client ID (e.g. HH-4K7P2Q). Only "create" is
+    // public, so an existing ID can never be overwritten — a collision is rejected and retried.
+    match /clientIntakes/{intakeId} {
+      allow create: if request.resource.data.size() < 100
+        && request.resource.data.get('applicantId', intakeId) == intakeId
+        && request.resource.data.get('1_Full_Name', '') is string
+        && request.resource.data.get('4_Phone_Number', '') is string;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // One document per client, keyed by their access code. Knowing the code lets a client
+    // read their own plan and append check-ins; nobody but the coach can list or edit plans.
+    match /clientPortals/{accessCode} {
+      allow get: if true;
+      allow list, create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['checkins', 'lastCheckinAt', 'clientTargetWeight', 'clientTargetAt'])
+        && request.resource.data.get('checkins', []).size() <= resource.data.get('checkins', []).size() + 1
+        && request.resource.data.get('checkins', []).size() <= 200
+        && request.resource.data.get('clientTargetWeight', 0) is number
+      );
+    }
+  }
+}
