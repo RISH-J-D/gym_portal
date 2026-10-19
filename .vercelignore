@@ -1,0 +1,3 @@
+# Unauthenticated open mail relay; unused by the live portal (only ClientDashboard.jsx, which is never mounted, calls it).
+api/sendMail.js
+legacy-styles.css.bak

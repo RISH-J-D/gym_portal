@@ -151,11 +151,7 @@ button:disabled { opacity: .6; cursor: progress; }
 
 /* ---------- brand ---------- */
 .hh-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); background: none; border: 0; padding: 0; cursor: pointer; }
-.hh-brand-mark {
-  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px;
-  background: linear-gradient(135deg, #f43f5e, #be123c); color: #fff; font: 800 13px/1 var(--font); letter-spacing: -.02em;
-  box-shadow: 0 4px 14px rgba(225, 29, 72, .35), inset 0 1px 0 rgba(255, 255, 255, .25);
-}
+.hh-brand-mark { display: block; width: 52px; height: 52px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(225, 29, 72, .35)); }
 .hh-brand-text { display: flex; flex-direction: column; text-align: left; }
 .hh-brand-text strong { font: 800 14px/1.1 var(--font); letter-spacing: .06em; }
 .hh-brand-text small { font: 500 11.5px/1.2 var(--font); color: var(--muted); letter-spacing: .02em; }
@@ -467,16 +463,6 @@ button[onclick^="addNewClientSlot"]:hover, button[onclick^="saveAdminEdits"]:hov
 /* Signed in: no need to offer the coach login link in the header. */
 body:has(#diet-section:not(.hidden)) #hh-topbar-coach { display: none; }
 
-/* ---------- test mode banner ---------- */
-#hh-test-banner {
-  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 14px; padding: 8px 16px;
-  background: #2a1f05; border-bottom: 1px solid rgba(251, 191, 36, .35); color: #fde68a; font: 500 13px/1.4 var(--font); text-align: center;
-}
-.hh-test-pill { padding: 3px 8px; border-radius: 999px; background: #fbbf24; color: #1c1402; font-weight: 700; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; }
-#hh-test-banner code { padding: 1px 6px; border-radius: 5px; background: rgba(251, 191, 36, .15); color: #fff; font: 600 12.5px/1.4 ui-monospace, Menlo, monospace; }
-#hh-test-banner button { padding: 4px 10px; border-radius: 7px; border: 1px solid rgba(251, 191, 36, .5); background: transparent; color: #fde68a; font: 600 12.5px/1.2 var(--font); cursor: pointer; }
-#hh-test-banner button:hover { background: rgba(251, 191, 36, .15); }
-
 /* ---------- application received / client ID ---------- */
 #form-page.is-done > :not(#hh-application-done) { display: none !important; }
 .hh-done-card {
@@ -521,3 +507,30 @@ body:has(#portal-page:not(.hidden)) #hh-topbar-client { display: none; }
 .hh-nc-send { margin-bottom: 16px; }
 .hh-dialog footer { display: flex; justify-content: flex-end; gap: 10px; padding-top: 18px; border-top: 1px solid var(--border); }
 @media (max-width: 520px) { .hh-dialog-grid { grid-template-columns: minmax(0, 1fr); } .hh-dialog-body { padding: 20px; } }
+
+/* ---------- back to home ---------- */
+.hh-back-home {
+  display: inline-flex; align-items: center; gap: 6px; margin: 0 0 16px; padding: 8px 14px; min-height: 40px;
+  border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface); color: var(--text-2);
+  font: 600 14px/1 var(--font); cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+}
+.hh-back-home:hover { color: var(--text); border-color: var(--muted); background: var(--surface-2); }
+.hh-back-home .hh-icon { width: 16px; height: 16px; }
+#form-page.is-done > .hh-back-home { display: none !important; }
+
+/* ---------- access code reset ---------- */
+.hhx-code-tools { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.hhx-code-select { display: inline-flex; align-items: center; gap: 6px; margin: 0 !important; padding: 0 !important; background: none !important; font: 500 13.5px/1.2 var(--font) !important; color: var(--text-2) !important; cursor: pointer; }
+.hhx-code-select input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
+.hhx-code-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.hhx-code-bar .hhx-btn { margin-left: auto !important; }
+.hhx-code-bar .hhx-btn:disabled { opacity: .5; cursor: not-allowed; }
+.hh-code-list { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 8px; }
+.hh-code-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg-raised); border: 1px solid var(--border); }
+.hh-code-list span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hh-code-list code { font: 700 15px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .06em; color: #fff; user-select: all; }
+.hh-code-list small { color: var(--muted); font-size: 12px; }
+@media (max-width: 520px) {
+  .hh-admin-client-heading { flex-wrap: wrap; }
+  .hhx-code-bar .hhx-btn { margin-left: 0 !important; width: 100%; }
+}

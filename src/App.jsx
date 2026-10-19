@@ -6,9 +6,30 @@ import './App.css';
  * React owns lifecycle/loading; the original Firebase-backed controls remain
  * operational and no nested browsing context is created.
  */
+// The loading screen lives in index.html so it shows before any script has loaded.
+async function hideSplash() {
+  const splash = document.getElementById('hh-splash');
+  if (!splash) return;
+  // Let the web font arrive (briefly) so the home page doesn't reflow right after appearing.
+  await Promise.race([document.fonts?.ready, new Promise((resolve) => setTimeout(resolve, 1200))]);
+  splash.classList.add('is-done');
+  setTimeout(() => splash.remove(), 400);
+}
+
+function showSplashError() {
+  const splash = document.getElementById('hh-splash');
+  if (!splash) return;
+  splash.classList.add('is-error');
+  splash.querySelector('.hh-splash-msg').textContent = 'The portal could not load. Check your internet connection and try again.';
+  const retry = document.createElement('button');
+  retry.type = 'button';
+  retry.textContent = 'Try again';
+  retry.addEventListener('click', () => window.location.reload());
+  splash.append(retry);
+}
+
 export default function App() {
   const hostRef = useRef(null);
-  const statusRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,12 +88,10 @@ export default function App() {
           }
           addedScripts.push(script);
         }
-        if (!cancelled) statusRef.current?.remove();
+        if (!cancelled) await hideSplash();
       } catch (error) {
         console.error('Portal startup failed:', error);
-        if (!cancelled && statusRef.current) {
-          statusRef.current.textContent = 'The portal could not start. Check the connection and reload this page.';
-        }
+        if (!cancelled) showSplashError();
       }
     }
 
@@ -86,8 +105,6 @@ export default function App() {
   }, []);
 
   return (
-    <main className="portal-host" ref={hostRef} aria-label="Heaven and Hell Fitness Portal">
-      <p className="portal-status" ref={statusRef} role="status">Loading fitness portal…</p>
-    </main>
+    <main className="portal-host" ref={hostRef} aria-label="Heaven and Hell Fitness Portal" />
   );
 }

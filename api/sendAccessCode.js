@@ -1,17 +1,25 @@
 // Vercel Serverless Function – emails a client their portal access code.
 //
-// Only the signed-in coach can call it: the request must carry the coach's Firebase ID token,
-// which is verified against Google's public keys. The message is a fixed template, so the
-// endpoint cannot be used to send arbitrary email.
+// Only the signed-in coach can call it: the request must carry the coach's Supabase access
+// token, which Supabase Auth confirms. The message is a fixed template, so the endpoint
+// cannot be used to send arbitrary email.
 //
-// Environment (Vercel dashboard): SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS
-// Optional: PORTAL_URL (public site address), COACH_EMAIL, FIREBASE_PROJECT_ID
+// Environment (Vercel dashboard): SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM
+// (Mailjet: host in-v3.mailjet.com, user = API key, pass = secret key, from = a validated sender)
+// Optional: PORTAL_URL (public site address), COACH_EMAIL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY
 import nodemailer from 'nodemailer';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
 
-const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'heaven-hell-96fb9';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://hubwfjfrhccwfdprxyho.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_tj5iI9DPPT7OSkzr1PDddQ_F4P5AaxH';
 const COACH_EMAIL = (process.env.COACH_EMAIL || 'kaviraja391@gmail.com').toLowerCase();
-const FIREBASE_KEYS = createRemoteJWKSet(new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'));
+
+// Returns the signed-in user's email, or null when the token is missing, expired or invalid.
+async function verifiedEmail(token) {
+  const resp = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` } });
+  if (!resp.ok) return null;
+  const user = await resp.json().catch(() => null);
+  return user && user.email ? String(user.email).toLowerCase() : null;
+}
 
 const EMAIL_RE = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
 const escapeHtml = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -20,7 +28,7 @@ export function validateRequest(body) {
   const { to, name, code } = body || {};
   if (typeof to !== 'string' || to.length > 254 || !EMAIL_RE.test(to.trim())) return 'A valid client email address is required.';
   if (typeof name !== 'string' || !name.trim() || name.length > 80) return 'Client name is required (max 80 characters).';
-  // Reject control characters (header injection) and "/" (not allowed in Firestore document IDs).
+  // Reject control characters (header injection) and "/" (not allowed in document IDs).
   // oxlint-disable-next-line no-control-regex
   if (typeof code !== 'string' || !code.trim() || code.length > 64 || /[\u0000-\u001f/]/.test(code)) return 'A valid access code is required.';
   return null;
@@ -77,17 +85,19 @@ export default async function handler(req, res) {
 
   const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ error: 'Coach sign-in required.' });
-  let claims;
+  let email;
   try {
-    ({ payload: claims } = await jwtVerify(token, FIREBASE_KEYS, { issuer: `https://securetoken.google.com/${PROJECT_ID}`, audience: PROJECT_ID }));
+    email = await verifiedEmail(token);
   } catch {
-    return res.status(401).json({ error: 'Your coach session has expired. Sign in again.' });
+    return res.status(503).json({ error: 'Could not check your coach session. Try again.' });
   }
-  if (String(claims.email || '').toLowerCase() !== COACH_EMAIL) return res.status(403).json({ error: 'Only the coach account can send access codes.' });
+  if (!email) return res.status(401).json({ error: 'Your coach session has expired. Sign in again.' });
+  if (email !== COACH_EMAIL) return res.status(403).json({ error: 'Only the coach account can send access codes.' });
 
   const problem = validateRequest(req.body);
   if (problem) return res.status(400).json({ error: problem });
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER) return res.status(503).json({ error: 'Email is not configured on the server (SMTP settings missing).' });
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER;
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS || !EMAIL_RE.test(from || '')) return res.status(503).json({ error: 'Email is not configured on the server (SMTP settings missing).' });
 
   const { to, name, code } = req.body;
   const portalUrl = process.env.PORTAL_URL || `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
@@ -101,7 +111,7 @@ export default async function handler(req, res) {
   });
   try {
     await transporter.sendMail({
-      from: `"Heaven & Hell Fitness" <${process.env.SMTP_USER}>`,
+      from: `"Heaven & Hell Fitness" <${from}>`,
       replyTo: COACH_EMAIL,
       to: to.trim(),
       subject,

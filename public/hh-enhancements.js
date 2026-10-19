@@ -6,15 +6,24 @@
  *            diet plan publisher (templates, multi-assign, version history).
  *   Client — check-in form (kg/lbs + date picker), live diet viewer, one-click copy.
  *
- * Live data: each client gets a Firestore doc `clientPortals/{accessCode}` that the
+ * Live data: each client gets a Supabase document `clientPortals/{accessCode}` that the
  * admin publishes on every save. Clients read it (live) and append check-ins to it;
  * the admin dashboard absorbs those check-ins into the shared portal database.
- * See firestore.rules for the matching security rules.
+ * See supabase/schema.sql for the matching access rules.
  */
 (function () {
   'use strict';
   if (window.__hhxLoaded) return;
   window.__hhxLoaded = true;
+
+  // Clear data left behind by the retired test-mode sandbox.
+  try {
+    localStorage.removeItem('hhTestMode');
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('hhTest:')) localStorage.removeItem(k);
+    }
+  } catch { /* storage unavailable */ }
 
   const PORTALS = 'clientPortals';
   const KG_PER_LB = 0.45359237;
@@ -62,7 +71,7 @@
   const shortDate = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   const validKey = (k) => typeof k === 'string' && k.length > 0 && k.length < 300 && !k.includes('/') && k !== '.' && k !== '..' && !/^__.*__$/.test(k);
   const plain = (obj) => JSON.parse(JSON.stringify(obj));
-  const fsValue = () => firebase.firestore.FieldValue;
+  const fsValue = () => hhDb.FieldValue;
 
   function parseDate(value) {
     const s = String(value || '').trim();
@@ -276,14 +285,14 @@
       const moved = findBySlot(next, slotOf(k, prior[k]));
       if (!moved) continue;
       try {
-        const snap = await hhFirestore.collection(PORTALS).doc(k).get();
+        const snap = await hhStore.collection(PORTALS).doc(k).get();
         if (snap.exists) mergeCheckins(moved.rec, snap.data().checkins || []);
       } catch (e) { console.warn('Could not read pending check-ins for renamed code', e); }
     }
   }
   async function publishPortals(next, prior, all) {
     if (!hhIsAdmin()) return;
-    const col = hhFirestore.collection(PORTALS);
+    const col = hhStore.collection(PORTALS);
     const ops = [];
     for (const k in next) {
       if (!validKey(k) || !next[k]) continue;
@@ -296,7 +305,7 @@
       if (!next[k] && validKey(k)) ops.push((b) => b.delete(col.doc(k)));
     }
     for (let i = 0; i < ops.length; i += 400) {
-      const batch = hhFirestore.batch();
+      const batch = hhStore.batch();
       ops.slice(i, i + 400).forEach((op) => op(batch));
       await batch.commit();
     }
@@ -313,7 +322,7 @@
       S.publishedAll = true;
     } catch (e) {
       console.error('Client portal publish failed:', e);
-      toast('Saved. Clients\' live view could not be refreshed — publish the rules in firestore.rules (clientPortals).', 'warn');
+      toast('Saved. Clients\' live view could not be refreshed — run supabase/schema.sql in the Supabase SQL editor.', 'warn');
     }
     refreshAdminPanel();
     return result;
@@ -327,22 +336,6 @@
     // Client IDs are case-insensitive for people typing them: "hh4k7p2q" → "HH-4K7P2Q".
     if (!email && APPLICANT_ID.test(code)) { code = formatApplicantId(code); $('#client-pwd').value = code; }
     const loginSection = $('#login-section:not(.hidden)');
-    // Test logins switch the page into the sandbox (see hh-testmode.js).
-    const T = window.hhTestMode;
-    let testCoach = false;
-    if (T && loginSection) {
-      const isTestClient = loginSection.dataset.mode === 'client' && code.toLowerCase() === T.credentials.clientCode;
-      testCoach = loginSection.dataset.mode === 'coach' && email.toLowerCase() === T.credentials.coachLogin;
-      if (!T.active && (isTestClient || testCoach)) {
-        if (testCoach && code !== T.credentials.coachPassword) {
-          const err = $('#login-error');
-          if (err) { err.textContent = 'Email or password is incorrect.'; err.style.display = 'block'; }
-          return;
-        }
-        T.enter({ mode: testCoach ? 'coach' : 'client', code: testCoach ? '' : T.credentials.clientCode });
-        return;
-      }
-    }
     if (loginSection && loginSection.dataset.mode === 'coach' && !email) {
       const err = $('#login-error');
       if (err) { err.textContent = 'Enter your coach email and password.'; err.style.display = 'block'; }
@@ -366,18 +359,18 @@
         window.alert = (message) => {
           if (/invalid access password/i.test(String(message))) {
             const err = $('#login-error');
-            if (err) { err.textContent = "That access code wasn't recognised. Check it and try again, or message your coach."; err.style.display = 'block'; }
+            // Client IDs from the questionnaire only open a portal once the coach has made the applicant a client.
+            if (err) {
+              err.textContent = APPLICANT_ID.test(code)
+                ? `${code} isn't active yet. If you just applied, your coach still needs to set up your portal. You'll be able to log in with this ID once they do.`
+                : "That access code wasn't recognised. Check it and try again, or message your coach.";
+              err.style.display = 'block';
+            }
             $('#client-pwd')?.select();
           } else nativeAlert.call(window, message);
         };
       }
-      // The sandbox coach signs in as the portal's admin account.
-      const emailField = $('#admin-email');
-      if (testCoach && emailField) emailField.value = HH_ADMIN_EMAIL;
-      try { result = await legacyCheck.apply(this, arguments); } finally {
-        window.alert = nativeAlert;
-        if (testCoach && emailField) emailField.value = email;
-      }
+      try { result = await legacyCheck.apply(this, arguments); } finally { window.alert = nativeAlert; }
     } finally {
       if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = loginBtn.dataset.label || 'Unlock Dashboard'; }
     }
@@ -415,7 +408,7 @@
     const tw = Number(el ? el.value : '');
     if (!Number.isFinite(tw) || tw < 20 || tw > 400) { alert('Enter a valid target weight in kg.'); return; }
     try {
-      await hhFirestore.collection(PORTALS).doc(activeKey).update({ clientTargetWeight: tw, clientTargetAt: new Date().toISOString() });
+      await hhStore.collection(PORTALS).doc(activeKey).update({ clientTargetWeight: tw, clientTargetAt: new Date().toISOString() });
       toast('Target saved — your coach can see it.');
     } catch (e) {
       console.error('Client target save failed:', e);
@@ -475,7 +468,7 @@
   async function hydrateClient(code) {
     if (!validKey(code)) return;
     try {
-      const snap = await hhFirestore.collection(PORTALS).doc(code).get();
+      const snap = await hhStore.collection(PORTALS).doc(code).get();
       if (snap.exists) applyPortalDoc(code, snap.data());
     } catch (e) {
       console.warn('Live client data unavailable; using this device\'s copy.', e);
@@ -645,7 +638,7 @@
     };
     try {
       if (!navigator.onLine) throw Object.assign(new Error('offline'), { code: 'unavailable' });
-      await hhFirestore.collection(PORTALS).doc(code).update({ checkins: fsValue().arrayUnion(entry), lastCheckinAt: entry.enteredAt });
+      await hhStore.collection(PORTALS).doc(code).update({ checkins: fsValue().arrayUnion(entry), lastCheckinAt: entry.enteredAt });
       const d = readDb();
       if (d[code]) { mergeCheckins(d[code], [entry]); localStorage.setItem('heavenHellDatabase', JSON.stringify(d)); }
       // Re-render the whole client view so the legacy log list shows the new entry too.
@@ -664,7 +657,7 @@
     stopClientWatch();
     if (!validKey(code)) return;
     let lastDietAt = (readDb()[code] || {}).dietUpdatedAt || null;
-    S.unsubClient = hhFirestore.collection(PORTALS).doc(code).onSnapshot((snap) => {
+    S.unsubClient = hhStore.collection(PORTALS).doc(code).onSnapshot((snap) => {
       if (!snap.exists || S.clientCode !== code) return;
       const rec = applyPortalDoc(code, snap.data());
       if (rec.dietUpdatedAt && lastDietAt && rec.dietUpdatedAt !== lastDietAt) {
@@ -749,6 +742,7 @@
     });
     container.append(legacyClients, legacyForms);
     polishText(container);
+    decorateClientCards();
     renderPanel();
     updateLeadCount();
     watchLeads();
@@ -757,7 +751,7 @@
     if (!S.publishedAll) {
       publishPortals(readDb(), null, true).then(() => { S.publishedAll = true; }).catch((e) => {
         console.error('Initial client portal publish failed:', e);
-        toast('Client live portals are not active yet. Publish firestore.rules (clientPortals) in Firebase, then sign in again.', 'warn');
+        toast('Client live portals are not active yet. Run supabase/schema.sql in the Supabase SQL editor, then sign in again.', 'warn');
         setSyncState(false);
       });
     }
@@ -827,7 +821,7 @@
       if (S.tab === 'leads') renderLeadResults();
       else if (S.tab === 'overview') refreshAdminPanel();
     };
-    S.unsubLeads = hhFirestore.collection('clientIntakes').onSnapshot((snap) => {
+    S.unsubLeads = hhStore.collection('clientIntakes').onSnapshot((snap) => {
       const records = [];
       snap.forEach((doc) => records.push(normalizeLead(doc.id, doc.data())));
       onRecords(records);
@@ -841,7 +835,7 @@
   }
   function watchPortals() {
     if (S.unsubPortals) return;
-    S.unsubPortals = hhFirestore.collection(PORTALS).onSnapshot((snap) => {
+    S.unsubPortals = hhStore.collection(PORTALS).onSnapshot((snap) => {
       setSyncState(true);
       S.portalDocs = snap.docs;
       absorbCheckins();
@@ -876,8 +870,8 @@
       }
       if (added || targetChanged) await window.hhQueueDatabaseSync(d);
       if (clear.length) {
-        const batch = hhFirestore.batch();
-        clear.forEach(({ id, list }) => batch.update(hhFirestore.collection(PORTALS).doc(id), { checkins: fsValue().arrayRemove(...list) }));
+        const batch = hhStore.batch();
+        clear.forEach(({ id, list }) => batch.update(hhStore.collection(PORTALS).doc(id), { checkins: fsValue().arrayRemove(...list) }));
         await batch.commit();
       }
       if (added) {
@@ -1079,10 +1073,10 @@
     if (lead) lead.leadStatus = status;
     updateLeadCount();
     try {
-      await hhFirestore.collection('clientIntakes').doc(id).update({ leadStatus: status, leadStatusAt: new Date().toISOString() });
+      await hhStore.collection('clientIntakes').doc(id).update({ leadStatus: status, leadStatusAt: new Date().toISOString() });
     } catch (e) {
       console.warn('Lead status kept on this device only:', e);
-      toast('Status saved on this device only. Publish firestore.rules to share it across devices.', 'warn');
+      toast('Status saved on this device only. Check your connection and try again.', 'warn');
     }
   }
   function exportLeads() {
@@ -1146,27 +1140,23 @@
     if (!rec) throw new Error('Client not found.');
     const to = String(rec.email || '').trim();
     if (!EMAIL_RE.test(to)) throw Object.assign(new Error('No valid email address on file for this client.'), { code: 'no-email' });
-    if (window.hhTestMode && window.hhTestMode.active) {
-      await new Promise((r) => setTimeout(r, 300));
-    } else {
-      const user = hhAuth.currentUser;
-      if (!user || !hhIsAdmin()) throw new Error('Sign in as the coach to send emails.');
-      const token = await user.getIdToken();
-      let resp;
-      try {
-        resp = await fetch('/api/sendAccessCode', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ to, name: rec.name || 'there', code: key }),
-        });
-      } catch {
-        throw new Error('Could not reach the email service. Check your connection.');
-      }
-      if (!resp.ok) {
-        const info = await resp.json().catch(() => ({}));
-        if (resp.status === 404) throw new Error('The email service is only available on the deployed site.');
-        throw new Error(info.error || `Email service error (${resp.status}).`);
-      }
+    const user = hhAuth.currentUser;
+    if (!user || !hhIsAdmin()) throw new Error('Sign in as the coach to send emails.');
+    const token = await user.getIdToken();
+    let resp;
+    try {
+      resp = await fetch('/api/sendAccessCode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ to, name: rec.name || 'there', code: key }),
+      });
+    } catch {
+      throw new Error('Could not reach the email service. Check your connection.');
+    }
+    if (!resp.ok) {
+      const info = await resp.json().catch(() => ({}));
+      if (resp.status === 404) throw new Error('The email service is only available on the deployed site.');
+      throw new Error(info.error || `Email service error (${resp.status}).`);
     }
     rec.accessEmailSentAt = new Date().toISOString();
     rec.accessEmailTo = to;
@@ -1178,8 +1168,7 @@
     const rec = readDb()[key] || {};
     try {
       const to = await emailAccessCode(key);
-      const test = window.hhTestMode && window.hhTestMode.active;
-      toast(test ? `Test mode: access code email to ${to} simulated (not actually sent).` : `Access code emailed to ${to}.`);
+      toast(`Access code emailed to ${to}.`);
       return true;
     } catch (e) {
       console.warn('Access code email not sent:', e);
@@ -1189,6 +1178,101 @@
       return false;
     }
   }
+
+  /* ---------- access code reset ---------- */
+  // Each client card gets a select box and a "Reset code" button; a bar above the cards resets every selected client.
+  function decorateClientCards() {
+    const list = document.getElementById('hhx-legacy-clients');
+    if (!list) return;
+    const cards = [...list.querySelectorAll('.hh-admin-client-card')];
+    cards.forEach((card) => {
+      const pwd = card.querySelector('[id^="edit-pwd-"]');
+      const heading = card.querySelector('.hh-admin-client-heading');
+      if (!pwd || !heading || heading.querySelector('.hhx-code-tools')) return;
+      const key = pwd.defaultValue;
+      heading.append(html(`<div class="hhx-root hhx-code-tools">
+        <label class="hhx-code-select"><input type="checkbox" data-code-key="${esc(key)}"> Select</label>
+        <button type="button" class="hhx-btn hhx-btn--ghost hhx-btn--xs" data-hhx="reset-code" data-key="${esc(key)}">Reset code</button></div>`));
+    });
+    if (cards.length && !list.querySelector('.hhx-code-bar')) {
+      cards[0].before(html(`<div class="hhx-root hhx-code-bar">
+        <label class="hhx-code-select"><input type="checkbox" id="hhx-code-all"> Select all</label>
+        <span class="hhx-muted" id="hhx-code-count">No clients selected</span>
+        <button type="button" class="hhx-btn hhx-btn--ghost hhx-btn--sm" data-hhx="reset-selected" disabled>Reset access code for selected</button></div>`));
+    }
+  }
+  function selectedCodeKeys() {
+    return [...document.querySelectorAll('#hhx-legacy-clients [data-code-key]:checked')].map((b) => b.dataset.codeKey);
+  }
+  function updateCodeSelection() {
+    const boxes = [...document.querySelectorAll('#hhx-legacy-clients [data-code-key]')];
+    const n = boxes.filter((b) => b.checked).length;
+    const all = document.getElementById('hhx-code-all');
+    if (all) { all.checked = n > 0 && n === boxes.length; all.indeterminate = n > 0 && n < boxes.length; }
+    const count = document.getElementById('hhx-code-count');
+    if (count) count.textContent = n ? `${n} client${n === 1 ? '' : 's'} selected` : 'No clients selected';
+    const btn = document.querySelector('[data-hhx="reset-selected"]');
+    if (btn) btn.disabled = !n;
+  }
+  async function resetAccessCodes(keys) {
+    const d = readDb();
+    keys = keys.filter((k) => d[k]);
+    if (!keys.length) return;
+    if (hasUnsavedCardEdits() && !confirm('You have unsaved edits in the client cards. Resetting codes reloads the dashboard and those edits will be lost. Continue?')) return;
+    const names = keys.map((k) => d[k].name || 'Unnamed client');
+    const who = keys.length === 1 ? names[0] : `${keys.length} clients`;
+    if (!confirm(`Reset the access code for ${who}?\n\nA new code is created and the old one stops working immediately.`)) return;
+    // Rebuild in the same order so client numbering does not change.
+    const changed = [];
+    const used = new Set(Object.keys(d));
+    const next = {};
+    for (const [k, rec] of Object.entries(d)) {
+      if (!keys.includes(k)) { next[k] = rec; continue; }
+      let code;
+      do code = newApplicantId(); while (used.has(code));
+      used.add(code);
+      delete rec.accessEmailSentAt;
+      delete rec.accessEmailTo;
+      next[code] = rec;
+      changed.push({ name: rec.name || 'Unnamed client', oldCode: k, code, email: rec.email || '' });
+    }
+    try {
+      await window.hhQueueDatabaseSync(next);
+    } catch (e) {
+      console.error('Access code reset failed:', e);
+      alert('The access codes could not be reset. Check your connection and try again.');
+      return;
+    }
+    if (changed.some((c) => c.oldCode === S.pub.key)) S.pub = { key: '', text: '', loaded: '', also: [] };
+    const withEmail = changed.filter((c) => EMAIL_RE.test(c.email));
+    let emailed = new Set();
+    if (withEmail.length && confirm(`Email the new code to ${withEmail.length === 1 ? withEmail[0].name : withEmail.length + ' clients'} now?`)) {
+      for (const c of withEmail) if (await deliverAccessCode(c.code)) emailed.add(c.code);
+    }
+    await window.checkPassword();
+    showNewCodes(changed, emailed);
+  }
+  function showNewCodes(changed, emailed) {
+    document.getElementById('hh-new-codes')?.remove();
+    const dialog = html(`<dialog id="hh-new-codes" class="hh-dialog" aria-labelledby="hh-new-codes-title">
+      <div class="hh-dialog-body">
+        <header><h3 id="hh-new-codes-title">New access code${changed.length === 1 ? '' : 's'}</h3><p>The old code${changed.length === 1 ? ' no longer works' : 's no longer work'}. Share the new one with each client.</p></header>
+        <ul class="hh-code-list">${changed.map((c) => `<li><span>${esc(c.name)}</span><code>${esc(c.code)}</code><small>${emailed.has(c.code) ? 'Emailed' : 'Not emailed'}</small></li>`).join('')}</ul>
+        <footer><button type="button" class="hh-btn--ghost" data-codes="copy">Copy all</button><button type="button" class="hh-btn" data-codes="close">Done</button></footer>
+      </div></dialog>`);
+    document.body.append(dialog);
+    dialog.querySelector('[data-codes="close"]').addEventListener('click', () => { dialog.close(); dialog.remove(); });
+    dialog.querySelector('[data-codes="copy"]').addEventListener('click', () => {
+      copyText(changed.map((c) => `${c.name}: ${c.code}`).join('\n')).then(() => toast('New codes copied.')).catch(() => alert('Copy was blocked by the browser.'));
+    });
+    dialog.showModal();
+  }
+  document.addEventListener('change', (e) => {
+    if (e.target.id === 'hhx-code-all') {
+      document.querySelectorAll('#hhx-legacy-clients [data-code-key]').forEach((b) => { b.checked = e.target.checked; });
+      updateCodeSelection();
+    } else if (e.target.matches && e.target.matches('#hhx-legacy-clients [data-code-key]')) updateCodeSelection();
+  });
 
   // "Add client" opens a proper form (name, email, phone, code) instead of a blank placeholder profile.
   function openNewClientDialog() {
@@ -1448,7 +1532,7 @@
   /* ---------- Diet publisher ---------- */
   async function loadTemplates() {
     try {
-      const snap = await hhFirestore.collection('portalData').doc('dietTemplates').get();
+      const snap = await hhStore.collection('portalData').doc('dietTemplates').get();
       if (snap.exists && Array.isArray(snap.data().items)) {
         S.templates = snap.data().items;
         store.set('hhxTemplates', S.templates);
@@ -1459,7 +1543,7 @@
   async function saveTemplates() {
     store.set('hhxTemplates', S.templates);
     try {
-      await hhFirestore.collection('portalData').doc('dietTemplates').set({ items: S.templates, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      await hhStore.collection('portalData').doc('dietTemplates').set({ items: S.templates, updatedAt: hhDb.FieldValue.serverTimestamp() });
     } catch (e) {
       console.warn('Template saved on this device only:', e);
       toast('Template saved on this device only.', 'warn');
@@ -1586,7 +1670,7 @@
       toast(`Published to ${keys.map((k) => d[k].name).join(', ')}. Clients see it live.`);
     } catch (e) {
       console.error('Diet publish failed:', e);
-      toast('Publish failed. Check your admin login and Firestore rules.', 'error');
+      toast('Publish failed. Check your coach login and connection.', 'error');
     } finally {
       refreshAdminPanel();
     }
@@ -1596,12 +1680,36 @@
    * APP SHELL — header, welcome hero, login, onboarding wizard
    * ===================================================================== */
   const html = (markup) => { const t = document.createElement('template'); t.innerHTML = markup.trim(); return t.content.firstElementChild; };
-  const brandMarkup = (tag, attrs) => `<${tag} class="hh-brand" ${attrs}><span class="hh-brand-mark">H&amp;H</span><span class="hh-brand-text"><strong>HEAVEN &amp; HELL</strong><small>Fitness coaching</small></span></${tag}>`;
+  const brandMarkup = (tag, attrs) => `<${tag} class="hh-brand" ${attrs}><img class="hh-brand-mark" src="/logo.png" alt="" width="52" height="52"><span class="hh-brand-text"><strong>HEAVEN &amp; HELL</strong><small>Fitness coaching</small></span></${tag}>`;
+  // Leaving the portal signs the coach or client out, so the next login starts fresh.
+  function signOutPortal() {
+    const signedIn = $('#diet-section') && !$('#diet-section').classList.contains('hidden');
+    if (signedIn) {
+      stopClientWatch();
+      stopAdmin();
+      S.clientCode = null;
+      $('#hhx-client-signout')?.remove();
+      $('#diet-section').classList.add('hidden');
+      $('#login-section')?.classList.remove('hidden');
+      const dietContent = $('#diet-content');
+      if (dietContent) dietContent.innerHTML = '';
+      const adminView = $('#admin-container-view');
+      if (adminView) adminView.innerHTML = '';
+      const pwd = $('#client-pwd');
+      if (pwd) pwd.value = '';
+    }
+    if (hhAuth.currentUser) {
+      hhCloudReady = false;
+      hhAuth.signOut().catch((e) => console.warn('Sign-out failed:', e));
+    }
+  }
+
   function goHome() {
+    signOutPortal();
+    if (location.hash) { history.pushState(null, '', location.pathname + location.search); }
     $('#main-app')?.classList.add('hidden');
     const welcome = $('#welcome-page');
     if (welcome) welcome.style.display = '';
-    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
     window.scrollTo({ top: 0 });
   }
 
@@ -1641,6 +1749,11 @@
     main.querySelector('.nav-tabs')?.setAttribute('hidden', '');
     main.prepend(topbar);
 
+    // A visible way back to the home page from the login screens, dashboards and questionnaire.
+    ['#portal-page', '#form-page'].forEach((sel) => {
+      $(sel)?.prepend(html(`<button type="button" class="hh-back-home" data-hh="go-home">${icon('left')}Back to home</button>`));
+    });
+
     // Page headings
     const formTitle = $('#form-page > h2');
     if (formTitle) {
@@ -1667,25 +1780,8 @@
     initLogin();
     initWizard();
     initApplicationDone();
-    window.addEventListener('hashchange', applyRoute);
+    window.addEventListener('popstate', applyRoute);
     applyRoute();
-    initTestMode();
-  }
-
-  function initTestMode() {
-    const T = window.hhTestMode;
-    if (!T || !T.active || document.getElementById('hh-test-banner')) return;
-    const c = T.credentials;
-    const banner = html(`<div id="hh-test-banner" role="note"><span class="hh-test-pill">Test mode</span>
-      <span class="hh-test-text">Sample data, stored only in this browser. Client <code>${esc(c.clientCode)}</code> · Coach <code>${esc(c.coachLogin)}</code> / <code>${esc(c.coachPassword)}</code></span>
-      <button type="button" data-hh="test-exit">Exit test mode</button></div>`);
-    ($('#welcome-page') || document.body.firstElementChild).before(banner);
-    const pending = T.takePending();
-    if (!pending) return;
-    goLogin(pending.mode);
-    if (pending.mode === 'coach') { $('#admin-email').value = c.coachLogin; $('#client-pwd').value = c.coachPassword; }
-    else $('#client-pwd').value = pending.code || c.clientCode;
-    setTimeout(() => $('#login-section > button')?.click(), 50);
   }
 
   // Two dedicated sign-in pages share the legacy login form: #client-login and #coach-login.
@@ -1810,12 +1906,13 @@
       setTimeout(() => (mode === 'coach' && !$('#admin-email').value ? $('#admin-email') : $('#client-pwd'))?.focus(), 50);
     }
     const hash = mode === 'coach' ? '#coach-login' : '#client-login';
-    if (location.hash !== hash) history.replaceState(null, '', hash);
+    if (location.hash !== hash) history.pushState(null, '', hash);
   }
   function applyRoute() {
     if (location.hash === '#coach-login') goLogin('coach');
     else if (location.hash === '#client-login') goLogin('client');
     else if (location.hash === '#join' || location.hash === '#onboarding') goJoin();
+    else if (!location.hash) goHome();
   }
 
   /* ---------- applications: one unique client ID per submission ---------- */
@@ -1828,7 +1925,7 @@
   const APPLICANT_ID = /^hh-?[a-z0-9]{6}$/i;
   const formatApplicantId = (v) => { const c = String(v).replace(/[^a-z0-9]/gi, '').toUpperCase(); return 'HH-' + c.slice(2); };
 
-  // Intake submissions are stored under their client ID. Firestore rules only allow creating
+  // Intake submissions are stored under their client ID. The database only allows creating
   // a new document, so an (extremely unlikely) ID collision is rejected and a new ID is drawn.
   const legacyRequest = window.hhFirebaseRequest;
   window.hhFirebaseRequest = async function (path, options = {}) {
@@ -1837,11 +1934,11 @@
     for (let attempt = 0; ; attempt++) {
       const id = newApplicantId();
       try {
-        await hhFirestore.collection('clientIntakes').doc(id).set({ ...payload, applicantId: id });
+        await hhStore.collection('clientIntakes').doc(id).set({ ...payload, applicantId: id });
         S.lastApplicantId = id;
         return { name: id };
       } catch (e) {
-        if (e && e.code === 'permission-denied' && attempt < 3) continue;
+        if (e && (e.code === 'already-exists' || e.code === 'permission-denied') && attempt < 3) continue;
         throw e;
       }
     }
@@ -1914,7 +2011,7 @@
     window.startOnboarding();
     window.switchPage('form');
     showApplication(store.get('hhApplication', null));
-    if (location.hash !== '#join') history.replaceState(null, '', '#join');
+    if (location.hash !== '#join') history.pushState(null, '', '#join');
   }
 
   const STEP_SUBTITLES = [
@@ -2006,7 +2103,7 @@
       });
       if (scroll) $('#form-page')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
-    prev.addEventListener('click', () => (at === 0 ? (legacyBack ? legacyBack.click() : goHome()) : go(at - 1)));
+    prev.addEventListener('click', () => (at === 0 ? goHome() : go(at - 1)));
     next.addEventListener('click', () => go(at + 1));
     progress.addEventListener('click', (e) => { const b = e.target.closest('[data-step]'); if (b) go(Number(b.dataset.step)); });
     form.addEventListener('input', (e) => { if (e.target.classList.contains('hh-field-invalid')) { e.target.classList.remove('hh-field-invalid'); } });
@@ -2028,14 +2125,17 @@
     const el = e.target.closest('[data-hh]');
     if (!el) return;
     const action = el.dataset.hh;
-    if (action === 'go-home') goHome();
+    if (action === 'go-home') {
+      const unsaved = document.getElementById('hhx-admin') && (hasUnsavedCardEdits() || (S.tab === 'publisher' && S.pub.text !== S.pub.loaded));
+      if (unsaved && !confirm('Going home signs you out, and you have unsaved changes. Leave without saving?')) return;
+      goHome();
+    }
     else if (action === 'go-portal' || action === 'go-client') goLogin('client');
     else if (action === 'go-coach') goLogin('coach');
     else if (action === 'coach-reset') coachPasswordReset();
     else if (action === 'go-join') goJoin();
     else if (action === 'copy-applicant-id') copyText(el.dataset.id).then(() => toast('Client ID copied.')).catch(() => alert(el.dataset.id));
     else if (action === 'new-application') { if (confirm('Start a new application for someone else on this device?')) { store.set('hhApplication', null); showApplication(null); } }
-    else if (action === 'test-exit') window.hhTestMode?.exit();
   });
   document.addEventListener('click', async (e) => {
     const el = e.target.closest('[data-hhx]');
@@ -2043,6 +2143,12 @@
     const action = el.dataset.hhx;
     const d = readDb();
     switch (action) {
+      case 'reset-code':
+        await resetAccessCodes([el.dataset.key]);
+        break;
+      case 'reset-selected':
+        await resetAccessCodes(selectedCodeKeys());
+        break;
       case 'tab':
         S.tab = el.dataset.tab; store.set('hhxTab', S.tab); renderPanel();
         document.getElementById('hhx-admin')?.scrollIntoView({ behavior: 'smooth', block: 'start' });

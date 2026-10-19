@@ -161,23 +161,19 @@
     </div>
 </div>
 
-<script src="/firebase-compat.js"></script>
-<!-- Sandbox for the test logins (client test1, coach test2 / 1234); inactive otherwise. -->
-<script src="/hh-testmode.js"></script>
+<script src="/supabase-compat.js"></script>
 <script>
-  // HEAVEN-HELL Firebase project. Verify apiKey/appId against Project settings > Your apps.
-  const hhFirebaseConfig = {
-      apiKey: "AIzaSyDpu_Jx7IlpaZvXEuYWFRV9U6xrzt2jLbc",
-    authDomain: "heaven-hell-96fb9.firebaseapp.com",
-    projectId: "heaven-hell-96fb9",
-    storageBucket: "heaven-hell-96fb9.firebasestorage.app",
-    messagingSenderId: "606075129076",
-    appId: "1:606075129076:web:3e71431e60b85204e162a1"
-  };
-  if (!firebase.apps.length) firebase.initializeApp(hhFirebaseConfig);
-  const hhAuth = firebase.auth();
-  const hhFirestore = firebase.firestore();
+  // HEAVEN-HELL Supabase project (Project Settings > API: project URL and publishable/anon key).
+  // The publishable key is meant to be public; access rules live in supabase/schema.sql.
   const HH_ADMIN_EMAIL = "kaviraja391@gmail.com";
+  const hhSupabaseConfig = {
+    url: "https://hubwfjfrhccwfdprxyho.supabase.co",
+    anonKey: "sb_publishable_tj5iI9DPPT7OSkzr1PDddQ_F4P5AaxH",
+    adminEmail: HH_ADMIN_EMAIL
+  };
+  const hhDb = window.hhBackend.init(hhSupabaseConfig);
+  const hhAuth = hhDb.auth;
+  const hhStore = hhDb.store;
   let hhCloudReady = false;
   let hhCloudSaveTimer = null;
   function hhIsAdmin() {
@@ -186,7 +182,7 @@
   }
   async function hhLoadCloudDatabase() {
     if (!hhIsAdmin()) return;
-    const snap = await hhFirestore.collection('portalData').doc('main').get();
+    const snap = await hhStore.collection('portalData').doc('main').get();
     if (snap.exists && snap.data().database && typeof snap.data().database === 'object') {
       localStorage.setItem('heavenHellDatabase', JSON.stringify(snap.data().database));
     }
@@ -194,10 +190,10 @@
   }
   async function hhSaveCloudDatabase(database) {
     if (!hhIsAdmin() || !hhCloudReady) return;
-    await hhFirestore.collection('portalData').doc('main').set({database, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: hhAuth.currentUser.email});
+    await hhStore.collection('portalData').doc('main').set({database, updatedAt: hhDb.FieldValue.serverTimestamp(), updatedBy: hhAuth.currentUser.email});
   }
   async function hhQueueDatabaseSync(database) {
-    // Keep a local copy for this browser, but report success only after the shared Firestore write succeeds.
+    // Keep a local copy for this browser, but report success only after the shared database write succeeds.
     localStorage.setItem('heavenHellDatabase', JSON.stringify(database));
     if (!hhIsAdmin()) throw new Error('Admin sign-in is required to save shared portal changes.');
     if (!hhCloudReady) await hhLoadCloudDatabase();
@@ -244,15 +240,15 @@
         }
     }
 
-    // Shared client intake submissions stored in Cloud Firestore (new project).
+    // Shared client intake submissions stored in Supabase.
     async function hhFirebaseRequest(path, options = {}) {
-        if (typeof hhFirestore === 'undefined' || hhFirebaseConfig.apiKey.startsWith('REPLACE_') || hhFirebaseConfig.appId.startsWith('REPLACE_')) throw new Error('Complete the Firebase web app config using the exact values from Project settings > Your apps.');
+        if (hhSupabaseConfig.anonKey.startsWith('REPLACE_')) throw new Error('Add the Supabase publishable key to the portal configuration.');
         const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
         const collectionName = parts[0];
         if (!collectionName) throw new Error('Missing Firestore collection.');
         const method = (options.method || 'GET').toUpperCase();
         if (collectionName === 'clientIntakes') {
-            const collection = hhFirestore.collection('clientIntakes');
+            const collection = hhStore.collection('clientIntakes');
             if (parts.length === 1 && method === 'GET') {
                 const snap = await collection.orderBy('submittedAt', 'desc').get().catch(async () => collection.get());
                 const out = {}; snap.forEach(doc => out[doc.id] = doc.data()); return out;
@@ -381,7 +377,7 @@
             await checkPassword();
         } catch (error) {
             console.error('Shared database save failed:', error);
-            alert('❌ Save failed. Your changes were not confirmed in the shared database. Check your admin login, Firebase configuration, and Firestore rules, then try again.');
+            alert('❌ Save failed. Your changes were not confirmed in the shared database. Check your coach login and connection, then try again.');
         }
     }
 
@@ -412,7 +408,7 @@
             const code = error && error.code ? error.code : '';
             let reason = error && error.message ? error.message : 'Unknown error';
             if (code === 'permission-denied' || /insufficient permissions/i.test(reason)) {
-                reason = 'Firestore denied this submission. In Firebase Console, confirm these rules are published in project heaven-hell-96fb9 > Firestore Database > Rules, and that the database is (default). Do not open read access to everyone.';
+                reason = 'The database refused this submission. Please try again, or message your coach.';
             } else if (code === 'unavailable' || /network/i.test(reason)) {
                 reason = 'Connection failed. Check mobile internet and try again.';
             }
@@ -515,7 +511,7 @@
                 await checkPassword();
             } catch (error) {
                 console.error('Progress save failed:', error);
-                alert('❌ Progress could not be saved to the shared database. Please sign in as admin and check Firebase rules.');
+                alert('❌ Progress could not be saved to the shared database. Please sign in as the coach and try again.');
             }
         }
     }
@@ -590,7 +586,7 @@
             checkPassword();
         } catch (error) {
             console.error("Firebase intake deletion failed:", error);
-            alert("❌ Could not delete this record from Firebase. Check database rules and try again.");
+            alert("❌ Could not delete this record. Check your connection and try again.");
         }
     }
 
@@ -613,7 +609,7 @@
         const loginError = document.getElementById('login-error');
         if (loginError) { loginError.style.display = 'none'; loginError.textContent = ''; }
 
-        // Admin access must be verified by Firebase Authentication; no password is stored in this HTML.
+        // Admin access must be verified by Supabase Auth; no password is stored in this HTML.
         if (adminEmail) {
             try {
                 if (!adminEmail.includes('@') || !inputPassword) throw new Error('Enter your admin email and password.');
@@ -628,9 +624,9 @@
                 console.error('Firebase admin sign-in failed:', authError);
                 const code = authError.code || '';
                 let message = authError.message || 'Login failed.';
-                if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') message = 'Email or password is incorrect. Check the Firebase Authentication account.';
-                else if (code === 'auth/operation-not-allowed') message = 'Enable Email/Password sign-in in Firebase Authentication first.';
-                else if (code === 'auth/unauthorized-domain') message = 'Add this website domain under Firebase Authentication > Settings > Authorized domains.';
+                if (code === 'auth/invalid-credential') message = 'Email or password is incorrect.';
+                else if (code === 'auth/email-not-confirmed') message = 'This account has not been confirmed yet. Confirm it in Supabase > Authentication > Users.';
+                else if (code === 'auth/too-many-requests') message = 'Too many attempts. Wait a minute and try again.';
                 else if (code === 'auth/network-request-failed') message = 'Network issue. Check internet and try again.';
                 if (loginError) { loginError.textContent = message; loginError.style.display = 'block'; }
                 else alert(message);
@@ -737,7 +733,7 @@
                 localStorage.setItem('heavenHellIntakes', JSON.stringify(intakeRecords));
             } catch (error) {
                 console.error("Could not load shared Firebase intake records:", error);
-                masterViewHTML += `<p style="color:#fca5a5;padding:12px;">⚠️ Could not load shared forms from Firebase. Check internet access and database rules.</p>`;
+                masterViewHTML += `<p style="color:#fca5a5;padding:12px;">⚠️ Could not load submitted forms. Check your internet connection.</p>`;
             }
             if (intakeRecords.length === 0) {
                 masterViewHTML += `<p style="color: #94a3b8; font-style: italic; background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; text-align: center;">No client forms submitted yet.</p>`;
